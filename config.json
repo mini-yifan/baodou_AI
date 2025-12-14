@@ -1,0 +1,24 @@
+{
+    "api_config": {
+        "api_key": "",
+        "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+        "model_name": "doubao-seed-1-6-vision-250815"
+    },
+    "ai_config": {
+        "thinking_type": "disabled"
+    },
+    "execution_config": {
+        "max_visual_model_iterations": 80,
+        "default_max_iterations": 80
+    },
+    "screenshot_config": {
+        "optimize_for_speed": true,
+        "max_png": 1280,
+        "input_path": "imgs/screen.png",
+        "output_path": "imgs/label"
+    },
+    "mouse_config": {
+        "move_duration": 0.1,
+        "failsafe": false
+    }
+}
