@@ -23,9 +23,10 @@ doubao_control/
 ├── README.md              # 项目说明文档
 ├── requirements.txt       # 项目依赖库文件
 ├── pyqt_main.spec         # 程序打包配置文件
-├── get_next_action_AI_doubao.txt  # AI 系统提示文件
+├── get_next_action_AI_doubao.txt  # AI 系统提示文件（win版本）
+├── get_next_action_AI_doubao_mac.txt  # AI 系统提示文件（mac版本）
 ├── pyqt_main.py           # 主程序入口 (GUI)
-├── vl_model_test_doubao.py   # 豆包视觉模型调用模块，与GUI界面不连接
+├── vl_model_test_doubao.py   # 豆包视觉模型调用模块，与GUI界面不连接（在本项目中不执行，可用于其他项目使用）
 ├── vl_model_test_doubao2.py  # 豆包视觉模型调用模块，与GUI界面连接
 ├── cv_shot_doubao.py      # 截图与坐标处理模块
 └── favicon.ico            # 程序图标
@@ -263,12 +264,12 @@ pip install pyinstaller
 ```bash
 pyinstaller pyqt_main.spec
 ```
+（目前该命令仅适用于 Windows 系统）
 
 ### 3. 打包完成
 
 打包完成后，可执行文件将生成在 `dist` 目录中：
 - `dist/pyqt_main.exe` (Windows)
-- `dist/pyqt_main` (Linux/Mac)
 
 ### 4. 注意事项
 
