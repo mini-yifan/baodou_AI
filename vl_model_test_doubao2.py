@@ -13,12 +13,15 @@ import pyautogui
 import pyperclip
 import signal
 from pydantic import BaseModel
+import platform
 
 # 全局退出标志
 should_exit = False
 
 # 全局回调函数，用于通知主窗口AI输出的坐标
 coordinate_callback = None
+
+current_os = platform.system()
 
 # 设置坐标回调函数
 def set_coordinate_callback(callback):
@@ -32,6 +35,7 @@ def signal_handler(sig, frame):
     should_exit = True
 
 # 设置信号处理器
+# 所有系统都支持SIGINT信号（Ctrl+C）
 signal.signal(signal.SIGINT, signal_handler)
 
 # 加载配置文件
@@ -182,8 +186,12 @@ def get_next_element(user_content):
     )
 
     # 读取get_next_action_AI_doubao.txt文件
-    with open("get_next_action_AI_doubao.txt", "r", encoding="utf-8") as file:
-        system_content = file.read().strip()
+    if current_os == "Darwin":  # macOS
+        with open("get_next_action_AI_doubao_mac.txt", "r", encoding="utf-8") as file:
+            system_content = file.read().strip()
+    else:
+        with open("get_next_action_AI_doubao.txt", "r", encoding="utf-8") as file:
+            system_content = file.read().strip()
     #print(f"系统内容：{system_content}")
 
     completion = client.beta.chat.completions.parse(
@@ -327,8 +335,17 @@ def move_mouse_to_coordinates(coordinates, action, type_information, duration=MO
         if type_information:
             # 解析快捷键组合
             keys = type_information.split()
-            # 将meta键替换为win键（PyAutoGUI在Windows上使用win键）
-            keys = ["win" if key == "meta" else key for key in keys]
+            
+            # 根据操作系统处理快捷键
+            current_os = platform.system()
+            if current_os == "Darwin":  # macOS
+                # 在macOS上将win键替换为command键
+                keys = ["command" if key == "win" or key == "meta" else key for key in keys]
+                keys = ["command" if key == "cmd" else key for key in keys]
+            else:  # Windows和其他系统
+                # 在Windows上将meta键替换为win键
+                keys = ["win" if key == "meta" else key for key in keys]
+            
             print(f"执行热键操作: {'+'.join(keys)}")
             pyautogui.hotkey(*keys)
             action_str = f"执行热键操作: {'+'.join(keys)}"+"\n"
@@ -424,12 +441,19 @@ def move_mouse_to_coordinates(coordinates, action, type_information, duration=MO
         else:
             print(f"未知操作: {action}")
     
-    time.sleep(0.5)
+    time.sleep(0.2)
     if type_information != "" and action != "hotkey":
         # 将type_information保存到剪切板
         pyperclip.copy(type_information)
-        # 执行粘贴
-        pyautogui.hotkey('ctrl', 'v')
+        
+        # 根据操作系统执行粘贴
+        current_os = platform.system()
+        time.sleep(0.5)
+        if current_os == "Darwin":  # macOS
+            pyautogui.hotkey('command', 'v')
+        else:  # Windows和其他系统
+            pyautogui.hotkey('ctrl', 'v')
+        
         print(f"已粘贴: {type_information}")
         time.sleep(0.5)
         pyautogui.press('enter')
