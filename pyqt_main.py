@@ -23,8 +23,8 @@ WS_EX_TOOLWINDOW = 0x00000080  # 工具窗口样式，不会在任务栏显示�
 WDA_EXCLUDEFROMCAPTURE = 0x00000011
 
 # 定义AI坐标监测常量
-AI_COORDINATE_THRESHOLD = 500  # AI输出坐标与窗口的安全距离
-WINDOW_MOVE_DISTANCE = 600  # 窗口移动距离，超过500像素
+AI_COORDINATE_THRESHOLD = 600  # AI输出坐标与窗口的安全距离
+WINDOW_MOVE_DISTANCE = 700  # 窗口移动距离，超过500像素
 
 # 导入AI控制相关函数
 import vl_model_test_doubao2
@@ -537,13 +537,14 @@ class AIWindow(QWidget):
         new_y = win_center_y
         
         # 水平方向移动
-        if ai_x < win_center_x and (new_x + WINDOW_MOVE_DISTANCE) < screen_geometry.width():
+        if (new_x + WINDOW_MOVE_DISTANCE) < (screen_geometry.width() - win_width/2):
             new_x += WINDOW_MOVE_DISTANCE
+
         else:
             new_x -= WINDOW_MOVE_DISTANCE
         
         # 垂直方向移动
-        if ai_y < win_center_y and (new_y + WINDOW_MOVE_DISTANCE) < screen_geometry.height():
+        if (new_y + WINDOW_MOVE_DISTANCE) < (screen_geometry.height() - win_height/2):
             new_y += WINDOW_MOVE_DISTANCE
         else:
             new_y -= WINDOW_MOVE_DISTANCE
