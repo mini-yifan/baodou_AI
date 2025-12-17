@@ -3,6 +3,7 @@ import time
 import ctypes
 import os
 import json
+import platform
 
 # 仅在开发环境中设置Qt平台插件路径，打包时自动处理
 if os.path.exists('venv/Lib/site-packages'):
@@ -85,29 +86,88 @@ class AIWindow(QWidget):
         # 显示窗口
         self.show()
         
-        # 获取窗口句柄
-        hwnd = self.winId().__int__()
+        # 获取当前操作系统
+        current_os = platform.system()
         
-        # 使用Windows API设置窗口为分层窗口
-        user32 = ctypes.windll.user32
-        
-        # 获取当前扩展样式
-        current_style = user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
-        
-        # 设置新的扩展样式：添加WS_EX_LAYERED
-        new_style = current_style | WS_EX_LAYERED
-        user32.SetWindowLongW(hwnd, GWL_EXSTYLE, new_style)
-        
-        # 设置窗口为透明，但允许鼠标事件
-        user32.SetLayeredWindowAttributes(hwnd, 0, int(255 * 0.9), 0x00000002)
-        
-        # 新增：使用SetWindowDisplayAffinity使窗口不被CV2等截图工具捕捉
-        # 这是Windows 10版本1803及以上支持的功能
-        try:
-            user32.SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE)
-            print("窗口已设置为不可被截图")
-        except Exception as e:
-            print(f"设置窗口不可被截图时出错: {e}")
+        if current_os == "Windows":
+            # 获取窗口句柄
+            hwnd = self.winId().__int__()
+            
+            # 使用Windows API设置窗口为分层窗口
+            user32 = ctypes.windll.user32
+            
+            # 获取当前扩展样式
+            current_style = user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+            
+            # 设置新的扩展样式：添加WS_EX_LAYERED
+            new_style = current_style | WS_EX_LAYERED
+            user32.SetWindowLongW(hwnd, GWL_EXSTYLE, new_style)
+            
+            # 设置窗口为透明，但允许鼠标事件
+            user32.SetLayeredWindowAttributes(hwnd, 0, int(255 * 0.9), 0x00000002)
+            
+            # 新增：使用SetWindowDisplayAffinity使窗口不被CV2等截图工具捕捉
+            # 这是Windows 10版本1803及以上支持的功能
+            try:
+                user32.SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE)
+                print("窗口已设置为不可被截图")
+            except Exception as e:
+                print(f"设置窗口不可被截图时出错: {e}")
+        elif current_os == "Darwin":  # macOS
+            # 在macOS上，Qt的setWindowOpacity方法应该可以正常工作
+            print("macOS系统：窗口透明度设置已应用")
+            
+            # 尝试设置窗口不可被截图（macOS特定方法）
+            try:
+                # 尝试导入objc模块（需要安装pyobjc库）
+                import objc
+                from AppKit import NSWindow, NSWindowSharingNone, NSApplication
+                
+                # 获取当前应用程序
+                app = NSApplication.sharedApplication()
+                
+                # 获取所有窗口
+                windows = app.windows()
+                
+                # 查找当前PyQt窗口对应的NSWindow
+                pyqt_win_id = self.winId()
+                
+                for window in windows:
+                    # 比较窗口标题
+                    if window.title() == self.windowTitle():
+                        # 设置窗口为不可共享
+                        window.setSharingType_(NSWindowSharingNone)
+                        print("macOS系统：窗口已设置为不可被截图")
+                        
+                        # 尝试设置窗口级别为最高，减少被截图的可能性
+                        window.setLevel_(1000)  # 使用数值设置窗口级别，1000足够高
+                        print("macOS系统：窗口级别已设置为最高")
+                        break
+                
+                # 额外尝试：使用Core Graphics设置窗口属性
+                try:
+                    from Quartz import (CGWindowLevelForKey, kCGMaximumWindowLevelKey,
+                                      CGWindowListCopyWindowInfo, kCGWindowListOptionOnScreenOnly,
+                                      kCGNullWindowID, CGSNewWindowWithOpaqueShape)
+                    
+                    # 获取窗口信息
+                    window_info = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID)
+                    
+                    for info in window_info:
+                        if 'kCGWindowName' in info and info['kCGWindowName'] == self.windowTitle():
+                            # 获取窗口ID
+                            window_id = info['kCGWindowNumber']
+                            print(f"macOS系统：找到窗口ID: {window_id}")
+                            break
+                    
+                except ImportError:
+                    print("macOS系统：Quartz模块未安装，跳过额外防截图设置")
+                
+            except Exception as e:
+                print(f"macOS系统：设置窗口不可被截图时出错: {e}")
+                print("注意：需要安装pyobjc库才能启用防截图功能")
+        else:
+            print(f"{current_os}系统：使用默认窗口设置")
         
         # 创建主布局
         main_layout = QVBoxLayout()
