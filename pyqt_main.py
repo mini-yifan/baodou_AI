@@ -69,7 +69,7 @@ class AIWindow(QWidget):
     def initUI(self):
         # 设置窗口标题和大小
         self.setWindowTitle('包豆电脑')
-        self.setGeometry(100, 100, 500, 300)
+        self.setGeometry(100, 100, 520, 320)
         
         # 设置窗口标志：
         # - Qt.WindowStaysOnTopHint: 窗口始终在最顶层
@@ -109,64 +109,210 @@ class AIWindow(QWidget):
         except Exception as e:
             print(f"设置窗口不可被截图时出错: {e}")
         
-        # 创建布局
-        layout = QVBoxLayout()
+        # 创建主布局
+        main_layout = QVBoxLayout()
+        main_layout.setSpacing(8)  # 设置组件间距
+        main_layout.setContentsMargins(15, 10, 15, 10)  # 设置边距
         
-        # 创建标题标签
+        # 创建标题标签 - 蓝色清新主题
         title_label = QLabel('包豆电脑')
-        title_label.setFont(QFont('Arial', 14, QFont.Bold))
+        title_font = QFont('Microsoft YaHei', 16, QFont.Bold)  # 使用微软雅黑，稍大但不过大
+        title_label.setFont(title_font)
         title_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(title_label)
+        title_label.setStyleSheet("""
+            QLabel {
+                color: #1976d2;
+                padding: 8px;
+                margin-bottom: 8px;
+                background-color: #e3f2fd;
+                border-radius: 10px;
+                font-weight: bold;
+                border: 2px solid #bbdefb;
+            }
+        """)
+        main_layout.addWidget(title_label)
         
         # API密钥设置区域
         api_layout = QHBoxLayout()
+        api_layout.setSpacing(8)
         
-        # API密钥输入框
+        # API密钥输入框 - 蓝色清新主题
         self.api_key_input = QLineEdit()
         self.api_key_input.setEchoMode(QLineEdit.Password)  # 密码形式显示
         self.api_key_input.setPlaceholderText('请输入API密钥...')
         self.api_key_input.textChanged.connect(self.save_api_key)  # 文本变化时自动保存
+        api_key_font = QFont('Microsoft YaHei', 11)  # 增大字体
+        self.api_key_input.setFont(api_key_font)
+        self.api_key_input.setStyleSheet("""
+            QLineEdit {
+                padding: 10px;
+                border: 2px solid #90caf9;
+                border-radius: 8px;
+                background-color: #f5f9ff;
+                color: #1565c0;
+                font-size: 11pt;
+            }
+            QLineEdit:focus {
+                border-color: #2196f3;
+                background-color: #ffffff;
+                outline: none;
+            }
+            QLineEdit::placeholder {
+                color: #90caf9;
+            }
+        """)
         api_layout.addWidget(self.api_key_input)
         
-        # 获取API密钥按钮
-        self.get_api_key_btn = QPushButton('获取API密钥')
+        # 获取API密钥按钮 - 蓝色清新主题
+        self.get_api_key_btn = QPushButton('获取密钥')
         self.get_api_key_btn.clicked.connect(self.open_api_key_url)
+        button_font = QFont('Microsoft YaHei', 10, QFont.Bold)
+        self.get_api_key_btn.setFont(button_font)
+        self.get_api_key_btn.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #42a5f5, stop:1 #1976d2);
+                color: white;
+                border: none;
+                padding: 10px 14px;
+                border-radius: 8px;
+                font-weight: bold;
+                font-size: 10pt;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #64b5f6, stop:1 #2196f3);
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #1976d2, stop:1 #0d47a1);
+            }
+        """)
         api_layout.addWidget(self.get_api_key_btn)
         
-        layout.addLayout(api_layout)
+        main_layout.addLayout(api_layout)
         
-        # 创建输入框
+        # 创建输入框 - 蓝色清新主题
         self.input_text = QTextEdit()
-        self.input_text.setPlaceholderText('请输入您的需求...')
-        self.input_text.setFixedHeight(100)
-        layout.addWidget(self.input_text)
+        self.input_text.setPlaceholderText('请输入您的需求，AI将帮您执行...')
+        self.input_text.setFixedHeight(120)  # 增加高度
+        input_font = QFont('Microsoft YaHei', 11)  # 增大字体
+        self.input_text.setFont(input_font)
+        self.input_text.setStyleSheet("""
+            QTextEdit {
+                padding: 12px;
+                border: 2px solid #90caf9;
+                border-radius: 10px;
+                background-color: #f5f9ff;
+                color: #1565c0;
+                font-size: 11pt;
+                line-height: 1.5;
+            }
+            QTextEdit:focus {
+                border-color: #2196f3;
+                background-color: #ffffff;
+                outline: none;
+            }
+            QTextEdit::placeholder {
+                color: #90caf9;
+            }
+        """)
+        main_layout.addWidget(self.input_text)
         
         # 创建按钮布局
         button_layout = QHBoxLayout()
+        button_layout.setSpacing(12)
         
-        # 创建上传按钮
-        self.upload_btn = QPushButton('上传并执行')
+        # 创建上传按钮 - 蓝色清新主题
+        self.upload_btn = QPushButton('🚀 开始执行')
         self.upload_btn.clicked.connect(self.start_ai)
+        upload_font = QFont('Microsoft YaHei', 12, QFont.Bold)  # 更大字体
+        self.upload_btn.setFont(upload_font)
+        self.upload_btn.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #42a5f5, stop:1 #1976d2);
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-weight: bold;
+                min-height: 40px;
+                font-size: 12pt;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #64b5f6, stop:1 #2196f3);
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #1976d2, stop:1 #0d47a1);
+            }
+            QPushButton:disabled {
+                background: #cfd8dc;
+                color: #90a4ae;
+            }
+        """)
         button_layout.addWidget(self.upload_btn)
         
-        # 创建停止按钮
-        self.stop_btn = QPushButton('停止AI执行')
+        # 创建停止按钮 - 蓝色清新主题（浅蓝色取消样式）
+        self.stop_btn = QPushButton('⏹ 停止执行')
         self.stop_btn.clicked.connect(self.stop_ai)
         self.stop_btn.setEnabled(False)
+        stop_font = QFont('Microsoft YaHei', 12, QFont.Bold)  # 更大字体
+        self.stop_btn.setFont(stop_font)
+        self.stop_btn.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #90caf9, stop:1 #42a5f5);
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-weight: bold;
+                min-height: 40px;
+                font-size: 12pt;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #bbdefb, stop:1 #64b5f6);
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #42a5f5, stop:1 #1976d2);
+            }
+            QPushButton:disabled {
+                background: #cfd8dc;
+                color: #90a4ae;
+            }
+        """)
         button_layout.addWidget(self.stop_btn)
         
-        layout.addLayout(button_layout)
+        main_layout.addLayout(button_layout)
         
-        # 创建状态标签
-        self.status_label = QLabel('就绪')
+        # 创建状态标签 - 蓝色清新主题
+        self.status_label = QLabel('🎯 准备就绪')
         self.status_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.status_label)
+        status_font = QFont('Microsoft YaHei', 11, QFont.Bold)  # 增大字体
+        self.status_label.setFont(status_font)
+        self.status_label.setStyleSheet("""
+            QLabel {
+                color: #1976d2;
+                background-color: #e3f2fd;
+                padding: 12px;
+                border-radius: 8px;
+                margin-top: 8px;
+                font-weight: bold;
+                border: 2px solid #bbdefb;
+                font-size: 11pt;
+            }
+        """)
+        main_layout.addWidget(self.status_label)
         
         # 加载API密钥
         self.load_api_key()
         
         # 设置布局
-        self.setLayout(layout)
+        self.setLayout(main_layout)
+        
+        # 设置窗口整体样式 - 蓝色清新背景
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #f0f8ff;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #f8fdff, stop:1 #e6f7ff);
+            }
+        """)
         
     def open_api_key_url(self):
         """
@@ -214,7 +360,19 @@ class AIWindow(QWidget):
         
         # 检查是否都已填写
         if not api_key or not user_input:
-            self.status_label.setText('请正确填入密钥和需求')
+            self.status_label.setText('⚠️ 请正确填入密钥和需求')
+            self.status_label.setStyleSheet("""
+                QLabel {
+                    color: #d32f2f;
+                    background-color: #ffebee;
+                    padding: 12px;
+                    border-radius: 8px;
+                    margin-top: 8px;
+                    font-weight: bold;
+                    border: 2px solid #ffcdd2;
+                    font-size: 11pt;
+                }
+            """)
             return
         
         # 重置退出标志
@@ -226,7 +384,19 @@ class AIWindow(QWidget):
         user_content = "当前时间为:" + time_str + "\n" + "用户任务为:" + user_input
         
         # 更新状态
-        self.status_label.setText('AI正在执行...')
+        self.status_label.setText('🤖 AI正在执行中...')
+        self.status_label.setStyleSheet("""
+            QLabel {
+                color: #1976d2;
+                background-color: #e3f2fd;
+                padding: 12px;
+                border-radius: 8px;
+                margin-top: 8px;
+                font-weight: bold;
+                border: 2px solid #bbdefb;
+                font-size: 11pt;
+            }
+        """)
         self.upload_btn.setEnabled(False)
         self.stop_btn.setEnabled(True)
         
@@ -251,11 +421,35 @@ class AIWindow(QWidget):
         vl_model_test_doubao2.should_exit = True
         
         # 更新状态
-        self.status_label.setText('正在停止AI...')
+        self.status_label.setText('⏹️ 正在停止AI执行...')
+        self.status_label.setStyleSheet("""
+            QLabel {
+                color: #f57c00;
+                background-color: #fff3e0;
+                padding: 12px;
+                border-radius: 8px;
+                margin-top: 8px;
+                font-weight: bold;
+                border: 2px solid #ffe0b2;
+                font-size: 11pt;
+            }
+        """)
         
     def ai_finished(self, result):
         # AI执行完成
-        self.status_label.setText('AI执行完成')
+        self.status_label.setText('✅ AI执行完成')
+        self.status_label.setStyleSheet("""
+            QLabel {
+                color: #1976d2;
+                background-color: #e3f2fd;
+                padding: 12px;
+                border-radius: 8px;
+                margin-top: 8px;
+                font-weight: bold;
+                border: 2px solid #bbdefb;
+                font-size: 11pt;
+            }
+        """)
         self.upload_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
         
@@ -271,7 +465,19 @@ class AIWindow(QWidget):
         
     def ai_error(self, error):
         # AI执行出错
-        self.status_label.setText('AI执行错误，可能密钥错误或欠费')
+        self.status_label.setText('❌ AI执行错误，可能密钥错误或欠费')
+        self.status_label.setStyleSheet("""
+            QLabel {
+                color: #d32f2f;
+                background-color: #ffebee;
+                padding: 12px;
+                border-radius: 8px;
+                margin-top: 8px;
+                font-weight: bold;
+                border: 2px solid #ffcdd2;
+                font-size: 11pt;
+            }
+        """)
         self.upload_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
         
