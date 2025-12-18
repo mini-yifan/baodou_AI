@@ -32,6 +32,29 @@ baodot_AI/
 └── favicon.ico            # 程序图标
 ```
 
+## 获取项目
+
+### 使用 Git 克隆
+
+如果您已经安装了 Git，可以使用以下命令克隆项目：
+
+```bash
+git clone https://github.com/mini-yifan/baodou_AI.git
+
+# 进入项目目录
+cd baodou_AI
+```
+
+### 直接下载压缩包
+
+如果您没有安装 Git，可以直接下载项目的压缩包：
+
+1. 访问项目的 GitHub 页面
+2. 点击右上角的 "Code" 按钮
+3. 选择 "Download ZIP"
+4. 下载完成后，解压到您想要存放的目录
+5. 进入解压后的项目目录
+
 ## 环境搭建
 
 ### 1. 创建虚拟环境
