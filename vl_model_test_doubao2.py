@@ -15,13 +15,6 @@ import signal
 from pydantic import BaseModel
 import platform
 
-# 导入资源路径处理模块
-try:
-    from resource_utils import load_config, save_config, get_user_data_path, get_screenshot_config
-    RESOURCE_UTILS_AVAILABLE = True
-except ImportError:
-    RESOURCE_UTILS_AVAILABLE = False
-
 # 全局退出标志
 should_exit = False
 
@@ -88,24 +81,21 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 # 加载配置文件
-def load_config_wrapper(config_path="config.json"):
+def load_config(config_path="config.json"):
     """
-    加载配置文件的包装函数，优先使用resource_utils模块
+    加载配置文件
     """
-    if RESOURCE_UTILS_AVAILABLE:
-        return load_config(config_path)
-    else:
-        try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                config = json.load(f)
-            log_print(f"成功加载配置文件: {config_path}")
-            return config
-        except Exception as e:
-            log_print(f"加载配置文件失败: {e}")
-            return None
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+        log_print(f"成功加载配置文件: {config_path}")
+        return config
+    except Exception as e:
+        log_print(f"加载配置文件失败: {e}")
+        return None
 
 # 加载配置
-config = load_config_wrapper()
+config = load_config()
 
 # 设置默认值，防止配置文件加载失败
 DEFAULT_CONFIG = {
