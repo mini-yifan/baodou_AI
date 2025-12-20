@@ -22,14 +22,18 @@ baodot_AI/
 ├── config.json            # 系统配置文件
 ├── README.md              # 项目说明文档
 ├── requirements.txt       # 项目依赖库文件
-├── pyqt_main.spec         # 程序打包配置文件
+├── pyqt_main.spec         # win系统程序打包配置文件
+├── pyqt_main_mac.spec     # mac系统程序打包配置文件
 ├── get_next_action_AI_doubao.txt  # AI 系统提示文件（win版本）
 ├── get_next_action_AI_doubao_mac.txt  # AI 系统提示文件（mac版本）
 ├── pyqt_main.py           # 主程序入口 (GUI)
 ├── vl_model_test_doubao.py   # 豆包视觉模型调用模块，与GUI界面不连接（在本项目中不执行，可用于其他项目使用）
 ├── vl_model_test_doubao2.py  # 豆包视觉模型调用模块，与GUI界面连接
+├── log_window.py            # 日志窗口模块
 ├── cv_shot_doubao.py      # 截图与坐标处理模块
-└── favicon.ico            # 程序图标
+├── mac_app_utils.py       # Mac应用资源路径处理模块
+├── favicon.ico            # win系统程序图标
+└── favicon_mac.ico        # mac系统程序图标
 ```
 
 ## 获取项目
@@ -283,17 +287,23 @@ AI 系统提示文件，定义了：
 pip install pyinstaller
 ```
 
-### 2. 执行打包命令
+### 2. win系统打包命令
 
 ```bash
 pyinstaller pyqt_main.spec
 ```
-（目前该命令仅适用于 Windows 系统）
 
-### 3. 打包完成
+### 3. mac系统打包命令
+
+```bash
+pyinstaller pyqt_main_mac.spec
+```
+
+### 4. 打包完成
 
 打包完成后，可执行文件将生成在 `dist` 目录中：
 - `dist/pyqt_main.exe` (Windows)
+- `dist/pyqt_main.app` (macOS)
 
 ### 4. 注意事项
 
