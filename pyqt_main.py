@@ -24,12 +24,15 @@ WS_EX_TOOLWINDOW = 0x00000080  # 工具窗口样式，不会在任务栏显示�
 WDA_EXCLUDEFROMCAPTURE = 0x00000011
 
 # 定义AI坐标监测常量
-AI_COORDINATE_THRESHOLD = 600  # AI输出坐标与窗口的安全距离
-WINDOW_MOVE_DISTANCE = 700  # 窗口移动距离，超过500像素
+AI_COORDINATE_THRESHOLD = 500  # AI输出坐标与窗口的安全距离
+WINDOW_MOVE_DISTANCE = 600  # 窗口移动距离，超过500像素
 
 # 导入AI控制相关函数
 import vl_model_test_doubao2
 from vl_model_test_doubao2 import auto_control_computer, set_coordinate_callback
+
+# 导入日志窗口模块
+from log_window import init_log_window
 
 # 创建一个工作线程来运行AI控制逻辑
 class AIWorker(QThread):
@@ -624,7 +627,13 @@ class AIWindow(QWidget):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    
+    # 初始化并显示日志窗口
+    log_window = init_log_window()
+    
+    # 创建并显示AI主窗口
     window = AIWindow()
+
     sys.exit(app.exec_())
 
     # 打包命令： pyinstaller pyqt_main.spec

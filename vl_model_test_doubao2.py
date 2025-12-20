@@ -15,6 +15,13 @@ import signal
 from pydantic import BaseModel
 import platform
 
+# 导入资源路径处理模块
+try:
+    from resource_utils import load_config, save_config, get_user_data_path, get_screenshot_config
+    RESOURCE_UTILS_AVAILABLE = True
+except ImportError:
+    RESOURCE_UTILS_AVAILABLE = False
+
 # 全局退出标志
 should_exit = False
 
@@ -22,6 +29,48 @@ should_exit = False
 coordinate_callback = None
 
 current_os = platform.system()
+
+# 尝试导入日志窗口模块
+try:
+    from log_window import get_log_window
+    LOG_WINDOW_AVAILABLE = True
+except ImportError:
+    LOG_WINDOW_AVAILABLE = False
+
+# 全局信号处理器实例
+_signal_handler = None
+
+def get_signal_handler():
+    """获取全局信号处理器实例"""
+    global _signal_handler
+    if _signal_handler is None and LOG_WINDOW_AVAILABLE:
+        try:
+            log_window = get_log_window()
+            if log_window:
+                _signal_handler = log_window.signal_handler
+        except:
+            pass
+    return _signal_handler
+
+# 初始化日志窗口函数
+def init_log_if_available():
+    """如果日志窗口可用，则初始化它"""
+    if LOG_WINDOW_AVAILABLE:
+        try:
+            log_window = get_log_window()
+            return log_window
+        except:
+            return None
+    return None
+
+# 日志打印函数，确保日志能显示在日志窗口中
+def log_print(*args, **kwargs):
+    """自定义打印函数，仅使用原始print函数"""
+    # 由于系统已经重定向了stdout/stderr，直接使用原始print函数即可
+    # 不需要额外发送到日志窗口，否则会导致重复输出
+    import builtins
+    original_print = builtins.print
+    original_print(*args, **kwargs)
 
 # 设置坐标回调函数
 def set_coordinate_callback(callback):
@@ -31,7 +80,7 @@ def set_coordinate_callback(callback):
 # 信号处理函数
 def signal_handler(sig, frame):
     global should_exit
-    print("\n收到中断信号，正在优雅退出...")
+    log_print("\n收到中断信号，正在优雅退出...")
     should_exit = True
 
 # 设置信号处理器
@@ -39,21 +88,24 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 # 加载配置文件
-def load_config(config_path="config.json"):
+def load_config_wrapper(config_path="config.json"):
     """
-    加载配置文件
+    加载配置文件的包装函数，优先使用resource_utils模块
     """
-    try:
-        with open(config_path, "r", encoding="utf-8") as f:
-            config = json.load(f)
-        print(f"成功加载配置文件: {config_path}")
-        return config
-    except Exception as e:
-        print(f"加载配置文件失败: {e}")
-        return None
+    if RESOURCE_UTILS_AVAILABLE:
+        return load_config(config_path)
+    else:
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                config = json.load(f)
+            log_print(f"成功加载配置文件: {config_path}")
+            return config
+        except Exception as e:
+            log_print(f"加载配置文件失败: {e}")
+            return None
 
 # 加载配置
-config = load_config()
+config = load_config_wrapper()
 
 # 设置默认值，防止配置文件加载失败
 DEFAULT_CONFIG = {
@@ -112,9 +164,9 @@ def read_local_image(image_path):
         
         # 获取图片信息
         height, width, channels = img.shape
-        print(f"成功读取图片: {image_path}")
-        print(f"图片尺寸: {width} x {height} 像素")
-        print(f"图片通道数: {channels}")
+        log_print(f"成功读取图片: {image_path}")
+        log_print(f"图片尺寸: {width} x {height} 像素")
+        log_print(f"图片通道数: {channels}")
         
         # 将图片编码为base64
         _, buffer = cv2.imencode('.png', img)
@@ -123,7 +175,7 @@ def read_local_image(image_path):
         # 返回data URL格式的图片数据
         return f"data:image/png;base64,{img_base64}"
     except Exception as e:
-        print(f"读取图片时出错: {e}")
+        log_print(f"读取图片时出错: {e}")
         return None
 
 class MathResponse(BaseModel):
@@ -157,24 +209,24 @@ def get_next_element(user_content):
     
     # 检查图片是否存在
     if not os.path.exists(image_path):
-        print(f"错误：图片文件不存在 - {os.path.abspath(image_path)}")
+        log_print(f"错误：图片文件不存在 - {os.path.abspath(image_path)}")
         return
     
     # 读取并转换图片
     image_data_url = read_local_image(image_path)
     if not image_data_url:
-        print("无法继续，图片读取失败")
+        log_print("无法继续，图片读取失败")
         return
     
     # 尝试获取API Key
     api_key = API_CONFIG["api_key"]
     if not api_key:
-        print("\n提示：配置文件中未设置API Key，跳过模型分析")
-        print("图片已成功读取并转换，可以手动复制base64数据或保存结果")
+        log_print("\n提示：配置文件中未设置API Key，跳过模型分析")
+        log_print("图片已成功读取并转换，可以手动复制base64数据或保存结果")
         # 可以选择保存处理后的图片信息到文件
         return
     
-    print("\n正在初始化OpenAI客户端并调用多模态模型分析图片...")
+    log_print("\n正在初始化OpenAI客户端并调用多模态模型分析图片...")
     
     client = OpenAI(
     # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx"
@@ -192,7 +244,7 @@ def get_next_element(user_content):
     else:
         with open("get_next_action_AI_doubao.txt", "r", encoding="utf-8") as file:
             system_content = file.read().strip()
-    #print(f"系统内容：{system_content}")
+    #log_print(f"系统内容：{system_content}")
 
     completion = client.beta.chat.completions.parse(
         model=API_CONFIG["model_name"],  # 此处以doubao-1-5-ui-tars-250428为例，可按需更换模型名称。模型列表：https://help.aliyun.com/zh/model-studio/models
@@ -215,7 +267,7 @@ def get_next_element(user_content):
     },
     )
 
-    print(completion.choices[0].message.content)
+    log_print(completion.choices[0].message.content)
     return completion.choices[0].message.content
 
 
@@ -245,11 +297,11 @@ def parse_json(json_str):
         if json_matches:
             # 取最长的匹配项（最可能是完整的JSON）
             valid_json = max(json_matches, key=len)
-            print(f"从AI输出中提取的JSON: {valid_json}")
+            log_print(f"从AI输出中提取的JSON: {valid_json}")
             return json.loads(valid_json)
         else:
             # 如果正则匹配失败，尝试原始方法
-            print("正则匹配JSON失败，尝试原始方法")
+            log_print("正则匹配JSON失败，尝试原始方法")
             # 找到第一个 '{' 和最后一个 '}'
             first_brace = json_str.find('{')
             last_brace = json_str.rfind('}')
@@ -257,26 +309,26 @@ def parse_json(json_str):
             if first_brace != -1 and last_brace != -1 and first_brace < last_brace:
                 # 提取有效的JSON部分
                 valid_json = json_str[first_brace:last_brace + 1]
-                print(f"提取的有效JSON: {valid_json}")
+                log_print(f"提取的有效JSON: {valid_json}")
                 return json.loads(valid_json)
             else:
                 # 尝试直接解析原始字符串
                 return json.loads(json_str)
             
     except json.JSONDecodeError as e:
-        print(f"JSON解析错误: {e}")
+        log_print(f"JSON解析错误: {e}")
         # 尝试更复杂的修复策略
         try:
             # 移除多余的大括号
             cleaned_str = re.sub(r'^\s*{\s*{\s*', '{', json_str)
             cleaned_str = re.sub(r'\s*}\s*}\s*$', '}', cleaned_str)
-            print(f"清理后的JSON: {cleaned_str}")
+            log_print(f"清理后的JSON: {cleaned_str}")
             return json.loads(cleaned_str)
         except json.JSONDecodeError as e2:
-            print(f"二次解析失败: {e2}")
+            log_print(f"二次解析失败: {e2}")
             return None
     except Exception as e:
-        print(f"解析过程中发生错误: {e}")
+        log_print(f"解析过程中发生错误: {e}")
         return None
 
 # 控制鼠标函数
@@ -312,10 +364,10 @@ def move_mouse_to_coordinates(coordinates, action, type_information, duration=MO
     coordinates = fix_coordinates(coordinates)
     # 先处理页面加载状态
     if action == "page_loading":
-        print("检测到页面正在加载，暂停3秒...")
+        log_print("检测到页面正在加载，暂停3秒...")
         action_str = "检测到页面正在加载，暂停3秒..."+"\n"
         time.sleep(0.5)
-        print("暂停结束，继续操作")
+        log_print("暂停结束，继续操作")
         action_str = action_str + "暂停结束，继续操作"+"\n"
         return action_str, None
     
@@ -346,11 +398,11 @@ def move_mouse_to_coordinates(coordinates, action, type_information, duration=MO
                 # 在Windows上将meta键替换为win键
                 keys = ["win" if key == "meta" else key for key in keys]
             
-            print(f"执行热键操作: {'+'.join(keys)}")
+            log_print(f"执行热键操作: {'+'.join(keys)}")
             pyautogui.hotkey(*keys)
             action_str = f"执行热键操作: {'+'.join(keys)}"+"\n"
         else:
-            print("热键操作但未提供快捷键信息")
+            log_print("热键操作但未提供快捷键信息")
         return action_str, None
     
     # 处理拖拽操作
@@ -367,7 +419,7 @@ def move_mouse_to_coordinates(coordinates, action, type_information, duration=MO
             try:
                 coordinate_callback((start_x, start_y))
             except Exception as e:
-                print(f"调用坐标回调函数时出错: {e}")
+                log_print(f"调用坐标回调函数时出错: {e}")
         
         end_x, end_y = map_coordinates(end_x, end_y, scale, img_width, img_height)
         
@@ -376,16 +428,16 @@ def move_mouse_to_coordinates(coordinates, action, type_information, duration=MO
             try:
                 coordinate_callback((end_x, end_y))
             except Exception as e:
-                print(f"调用坐标回调函数时出错: {e}")
+                log_print(f"调用坐标回调函数时出错: {e}")
         
         # 执行拖拽操作
         pyautogui.moveTo(start_x, start_y, duration=duration)
-        print(f"鼠标已移动到拖拽起点: ({start_x}, {start_y})")
+        log_print(f"鼠标已移动到拖拽起点: ({start_x}, {start_y})")
         action_str = f"鼠标已移动到拖拽起点: ({start_x}, {start_y})"+"\n"
         
         # 按下鼠标左键并拖动到终点
         pyautogui.dragTo(end_x, end_y, duration=duration*10)
-        print(f"已完成拖拽操作: ({start_x}, {start_y}) -> ({end_x}, {end_y})")
+        log_print(f"已完成拖拽操作: ({start_x}, {start_y}) -> ({end_x}, {end_y})")
         action_str = action_str + f"已完成拖拽操作: ({start_x}, {start_y}) -> ({end_x}, {end_y})"+"\n"
         
         # 保存映射后的坐标
@@ -401,13 +453,13 @@ def move_mouse_to_coordinates(coordinates, action, type_information, duration=MO
         if coordinate_callback and 0 <= x <= 100000 and 0 <= y <= 100000:
             try:
                 coordinate_callback((x, y))
-                print(f"已通知主窗口AI输出的坐标: ({x}, {y})")
+                log_print(f"已通知主窗口AI输出的坐标: ({x}, {y})")
             except Exception as e:
-                print(f"调用坐标回调函数时出错: {e}")
+                log_print(f"调用坐标回调函数时出错: {e}")
         
         # 移动鼠标
         pyautogui.moveTo(x, y, duration=duration)
-        print(f"鼠标已移动到坐标: ({x}, {y})")
+        log_print(f"鼠标已移动到坐标: ({x}, {y})")
         action_str = f"鼠标已移动到坐标: ({x}, {y})"+"\n"
         
         # 保存映射后的坐标
@@ -416,30 +468,30 @@ def move_mouse_to_coordinates(coordinates, action, type_information, duration=MO
         # 执行相应操作
         if action == "click":
             pyautogui.click()
-            print(f"已点击 ({x}, {y})")
+            log_print(f"已点击 ({x}, {y})")
             action_str = action_str + f"已点击 ({x}, {y})"+"\n"
         elif action == "double_click":
             pyautogui.doubleClick()
-            print(f"已双击 ({x}, {y})")
+            log_print(f"已双击 ({x}, {y})")
             action_str = action_str + f"已双击 ({x}, {y})"+"\n" 
         elif action == "long_press":
             pyautogui.mouseDown()
-            print(f"已长按 ({x}, {y})")
+            log_print(f"已长按 ({x}, {y})")
             action_str = action_str + f"已长按 ({x}, {y})"+"\n" 
         elif action == "right_click":
             pyautogui.rightClick()
-            print(f"已右键点击 ({x}, {y})")
+            log_print(f"已右键点击 ({x}, {y})")
             action_str = action_str + f"已右键点击 ({x}, {y})"+"\n" 
         elif action == "scroll_up":
             pyautogui.scroll(500)
-            print(f"已向上滚动 ({x}, {y})")
+            log_print(f"已向上滚动 ({x}, {y})")
             action_str = action_str + f"已向上滚动 ({x}, {y})"+"\n" 
         elif action == "scroll_down":
             pyautogui.scroll(-500)
-            print(f"已向下滚动 ({x}, {y})")
+            log_print(f"已向下滚动 ({x}, {y})")
             action_str = action_str + f"已向下滚动 ({x}, {y})"+"\n" 
         else:
-            print(f"未知操作: {action}")
+            log_print(f"未知操作: {action}")
     
     time.sleep(0.2)
     if type_information != "" and action != "hotkey":
@@ -448,17 +500,25 @@ def move_mouse_to_coordinates(coordinates, action, type_information, duration=MO
         
         # 根据操作系统执行粘贴
         current_os = platform.system()
-        time.sleep(0.5)
+        time.sleep(0.1)
         if current_os == "Darwin":  # macOS
-            pyautogui.hotkey('command', 'v')
+            # macOS上使用更可靠的粘贴方法
+            # 先确保焦点在正确的输入框中
+            time.sleep(0.2)
+            # 使用keydown和keyup确保按键持续时间足够
+            pyautogui.keyDown('command')
+            time.sleep(0.1)
+            pyautogui.press('v')
+            time.sleep(0.1)
+            pyautogui.keyUp('command')
         else:  # Windows和其他系统
             pyautogui.hotkey('ctrl', 'v')
         
-        print(f"已粘贴: {type_information}")
+        log_print(f"已粘贴: {type_information}")
         time.sleep(0.5)
         pyautogui.press('enter')
         time.sleep(0.5)
-        print("已发送")
+        log_print("已发送")
         action_str = action_str + f"已发送: {type_information}"+"\n" 
     # 将鼠标快速移动到屏幕的最左上角
     pyautogui.moveTo(0, 0, duration=duration)
@@ -486,18 +546,18 @@ def auto_control_computer(user_content, max_visual_model_iterations=EXECUTION_CO
             if filename.startswith("screen_label") and filename.endswith(".png"):
                 file_path = os.path.join(label_dir, filename)
                 os.remove(file_path)
-        print(f"已清空label文件夹: {label_dir}")
+        log_print(f"已清空label文件夹: {label_dir}")
 
     # 视觉模型循环次数
     for i in range(max_visual_model_iterations):
         # 检查退出标志
         if should_exit:
-            print("检测到退出标志，停止循环...")
+            log_print("检测到退出标志，停止循环...")
             return "程序已被用户中断"
-        print("\n")
-        print(f"=================第 {i} 次循环===============")
+        log_print("\n")
+        log_print(f"=================第 {i} 次循环===============")
         start_time = time.time()
-        print("\n")
+        log_print("\n")
         if i == 0:
             before_output = []
             before_content = ""
@@ -518,12 +578,12 @@ def auto_control_computer(user_content, max_visual_model_iterations=EXECUTION_CO
                 max_png=SCREENSHOT_CONFIG["max_png"]
             )
             if not success:
-                print("屏幕截图保存失败")
+                log_print("屏幕截图保存失败")
                 continue
-            print(f"屏幕截图已保存为 {os.path.basename(SCREENSHOT_CONFIG['input_path'])}")
+            log_print(f"屏幕截图已保存为 {os.path.basename(SCREENSHOT_CONFIG['input_path'])}")
 
             # is_page_loading_message = is_page_loading()
-            # print(is_page_loading_message)
+            # log_print(is_page_loading_message)
 
             next_element = get_next_element(before_content+"\n"+user_content)
 
@@ -538,18 +598,18 @@ def auto_control_computer(user_content, max_visual_model_iterations=EXECUTION_CO
                 type_information = next_element.get('type_information', '')
 
                 if whether_completed == "True":
-                    print(f"AI分析用时: {time.time() - start_time:.2f}秒")
+                    log_print(f"AI分析用时: {time.time() - start_time:.2f}秒")
                     return current_status
                     break
                 elif whether_completed == "difficult":
-                    print(f"AI分析用时: {time.time() - start_time:.2f}秒")
+                    log_print(f"AI分析用时: {time.time() - start_time:.2f}秒")
                     return current_status
                     break
                 else:
                     pass
                 
-                print(f"AI分析用时: {time.time() - start_time:.2f}秒")
-                print(f"下一步应该点击的元素: {element_info}")
+                log_print(f"AI分析用时: {time.time() - start_time:.2f}秒")
+                log_print(f"下一步应该点击的元素: {element_info}")
                 #location_str = get_location(element_info)
                 
                 # 检查坐标是否与之前相同
@@ -571,7 +631,7 @@ def auto_control_computer(user_content, max_visual_model_iterations=EXECUTION_CO
                 
                 # 如果连续3次相同坐标，清空记忆
                 if same_coordinate_count >= 3:
-                    print("检测到连续3次相同坐标，清空记忆")
+                    log_print("检测到连续3次相同坐标，清空记忆")
                     before_output = []  # 清空记忆列表
                     same_coordinate_count = 0
                     recent_coordinates = []
@@ -611,11 +671,11 @@ def auto_control_computer(user_content, max_visual_model_iterations=EXECUTION_CO
                             output_path=output_path
                         )
             else:
-                print("错误：未收到模型响应")
+                log_print("错误：未收到模型响应")
         except Exception as e:
             # 收集报错信息
             error_messages.append(f"第 {i} 次循环发生错误: {e}")
-            print(f"发生错误: {e}")
+            log_print(f"发生错误: {e}")
             # 抛出异常，让AIWorker的run方法捕获
             raise e
 
@@ -623,8 +683,8 @@ def auto_control_computer(user_content, max_visual_model_iterations=EXECUTION_CO
 
 
 if __name__ == "__main__":
-    print("=== 本地图片分析工具 ===")
-    print("按 Ctrl+C 可以随时退出程序")
+    log_print("=== 本地图片分析工具 ===")
+    log_print("按 Ctrl+C 可以随时退出程序")
     
     # 如果需要继续其他功能，可以取消下面的注释
     user_content = input("请输入您的需求：")
@@ -633,16 +693,16 @@ if __name__ == "__main__":
     time_str = time.strftime("%Y-%m-%d %H:%M", time.localtime())
     # 用户输入内容添加时间
     user_content = "当前时间为:"+time_str + "\n" + "用户任务为:"+user_content
-    print("正在处理...")
-    print(user_content)
+    log_print("正在处理...")
+    log_print(user_content)
     #time.sleep(5)
     current_time = time.time()
 
     auto_control_computer(user_content, max_visual_model_iterations=EXECUTION_CONFIG["max_visual_model_iterations"])
-    print(f"处理时间: {time.time() - current_time} 秒")
+    log_print(f"处理时间: {time.time() - current_time} 秒")
     
     # 如果是用户中断，打印友好提示
     if should_exit:
-        print("程序已成功退出")
+        log_print("程序已成功退出")
 
 
