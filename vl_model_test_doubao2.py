@@ -14,6 +14,7 @@ import pyperclip
 import signal
 from pydantic import BaseModel
 import platform
+from mac_app_utils import is_mac_app, get_app_resource_path, get_resource_file_path, get_default_imgs_path
 
 # 全局退出标志
 should_exit = False
@@ -85,6 +86,11 @@ def load_config(config_path="config.json"):
     """
     加载配置文件
     """
+    # 如果是Mac系统下的打包app状态，修改config_path为资源包路径
+    if is_mac_app():
+        config_path = get_resource_file_path(config_path)
+        log_print(f"检测到Mac App环境，使用资源包中的配置文件: {config_path}")
+    
     try:
         with open(config_path, "r", encoding="utf-8") as f:
             config = json.load(f)
@@ -138,6 +144,18 @@ else:
     EXECUTION_CONFIG = DEFAULT_CONFIG["execution_config"]
     SCREENSHOT_CONFIG = DEFAULT_CONFIG["screenshot_config"]
     MOUSE_CONFIG = DEFAULT_CONFIG["mouse_config"]
+
+# 如果是Mac系统下的打包app状态，修改SCREENSHOT_CONFIG中的路径
+if is_mac_app():
+    # 修改输入路径
+    if "input_path" in SCREENSHOT_CONFIG and not os.path.isabs(SCREENSHOT_CONFIG["input_path"]):
+        SCREENSHOT_CONFIG["input_path"] = get_resource_file_path(SCREENSHOT_CONFIG["input_path"])
+        log_print(f"Mac App环境，修改输入路径为: {SCREENSHOT_CONFIG['input_path']}")
+    
+    # 修改输出路径
+    if "output_path" in SCREENSHOT_CONFIG and not os.path.isabs(SCREENSHOT_CONFIG["output_path"]):
+        SCREENSHOT_CONFIG["output_path"] = get_resource_file_path(SCREENSHOT_CONFIG["output_path"])
+        log_print(f"Mac App环境，修改输出路径为: {SCREENSHOT_CONFIG['output_path']}")
 
 # 在文件开头导入后添加
 pyautogui.FAILSAFE = MOUSE_CONFIG["failsafe"]  # 禁用安全机制
@@ -194,6 +212,16 @@ def get_next_element(user_content):
         SCREENSHOT_CONFIG = DEFAULT_CONFIG["screenshot_config"]
         MOUSE_CONFIG = DEFAULT_CONFIG["mouse_config"]
     
+    # 如果是Mac系统下的打包app状态，修改SCREENSHOT_CONFIG中的路径
+    if is_mac_app():
+        # 修改输入路径
+        if "input_path" in SCREENSHOT_CONFIG and not os.path.isabs(SCREENSHOT_CONFIG["input_path"]):
+            SCREENSHOT_CONFIG["input_path"] = get_resource_file_path(SCREENSHOT_CONFIG["input_path"])
+        
+        # 修改输出路径
+        if "output_path" in SCREENSHOT_CONFIG and not os.path.isabs(SCREENSHOT_CONFIG["output_path"]):
+            SCREENSHOT_CONFIG["output_path"] = get_resource_file_path(SCREENSHOT_CONFIG["output_path"])
+    
     # 本地图片路径
     image_path = SCREENSHOT_CONFIG["input_path"]
     
@@ -229,7 +257,10 @@ def get_next_element(user_content):
 
     # 读取get_next_action_AI_doubao.txt文件
     if current_os == "Darwin":  # macOS
-        with open("get_next_action_AI_doubao_mac.txt", "r", encoding="utf-8") as file:
+        txt_path = "get_next_action_AI_doubao_mac.txt"
+        if is_mac_app():
+            txt_path = get_resource_file_path(txt_path)
+        with open(txt_path, "r", encoding="utf-8") as file:
             system_content = file.read().strip()
     else:
         with open("get_next_action_AI_doubao.txt", "r", encoding="utf-8") as file:

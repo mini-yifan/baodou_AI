@@ -3,16 +3,27 @@ import numpy as np
 import pyautogui
 import os
 import time
+import platform
+import re
+import sys
+from mac_app_utils import is_mac_app, get_app_resource_path, get_resource_file_path, get_default_imgs_path
 
-def capture_screen_and_save(save_path="imgs/screen.png", optimize_for_speed=True, max_png=1280):
+def capture_screen_and_save(save_path=None, optimize_for_speed=True, max_png=1280):
     """
     使用OpenCV实现自动截屏并保存到指定路径
     
     参数:
-        save_path: 保存路径，默认为"imgs/screen.png"
+        save_path: 保存路径，默认为"imgs/screen.png"（在Mac App环境下会自动调整为资源包路径）
         optimize_for_speed: 是否优化速度（减少日志和使用更快的保存参数）
         max_png: 图片最大尺寸限制
     """
+    # 如果未提供save_path，使用默认路径
+    if save_path is None:
+        default_imgs_path = get_default_imgs_path()
+        save_path = os.path.join(default_imgs_path, "screen.png")
+    # 如果是相对路径且是Mac App环境，则修改为资源包路径
+    elif not os.path.isabs(save_path) and is_mac_app():
+        save_path = get_resource_file_path(save_path)
     # 创建输出目录（如果不存在）
     output_dir = os.path.dirname(save_path)
     if output_dir and not os.path.exists(output_dir):
@@ -66,14 +77,14 @@ def capture_screen_and_save(save_path="imgs/screen.png", optimize_for_speed=True
         print(f"截屏过程中发生错误: {e}")
         return False, scale
 
-def mark_coordinate_on_image(coordinates, input_path="imgs/screen.png", output_path="imgs/screen_label.png", point_radius=10, point_color=(0, 0, 255), thickness=-1):
+def mark_coordinate_on_image(coordinates, input_path=None, output_path=None, point_radius=10, point_color=(0, 0, 255), thickness=-1):
     """
     在图片上标记指定坐标点
     
     参数:
         coordinates: tuple或list，坐标点(x, y)或两个坐标点[[x1, y1], [x2, y2]]
-        input_path: 输入图片路径
-        output_path: 输出图片路径
+        input_path: 输入图片路径（在Mac App环境下会自动调整为资源包路径）
+        output_path: 输出图片路径（在Mac App环境下会自动调整为资源包路径）
         point_radius: 标记点的半径
         point_color: 标记点的颜色，使用BGR格式，默认为红色(0, 0, 255)
         thickness: 线条粗细，-1表示填充
@@ -81,6 +92,18 @@ def mark_coordinate_on_image(coordinates, input_path="imgs/screen.png", output_p
     返回:
         bool: 标记成功返回True，失败返回False
     """
+    # 处理默认路径
+    default_imgs_path = get_default_imgs_path()
+    
+    if input_path is None:
+        input_path = os.path.join(default_imgs_path, "screen.png")
+    elif not os.path.isabs(input_path) and is_mac_app():
+        input_path = get_resource_file_path(input_path)
+    
+    if output_path is None:
+        output_path = os.path.join(default_imgs_path, "screen_label.png")
+    elif not os.path.isabs(output_path) and is_mac_app():
+        output_path = get_resource_file_path(output_path)
     try:
         # 检查输入文件是否存在
         if not os.path.exists(input_path):

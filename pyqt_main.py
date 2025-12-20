@@ -4,6 +4,8 @@ import ctypes
 import os
 import json
 import platform
+import re
+from mac_app_utils import is_mac_app, get_app_resource_path, get_resource_file_path
 
 # 仅在开发环境中设置Qt平台插件路径，打包时自动处理
 if os.path.exists('venv/Lib/site-packages'):
@@ -389,19 +391,28 @@ class AIWindow(QWidget):
         从config.json加载API密钥
         """
         try:
-            with open('config.json', 'r', encoding='utf-8') as f:
+            # 使用get_resource_file_path函数获取config.json的完整路径
+            config_path = get_resource_file_path('config.json')
+            print(f"尝试加载配置文件: {config_path}")
+            
+            with open(config_path, 'r', encoding='utf-8') as f:
                 config = json.load(f)
             api_key = config.get('api_config', {}).get('api_key', '')
             self.api_key_input.setText(api_key)
         except Exception as e:
             print(f"加载API密钥失败: {e}")
+            print(f"错误路径: {config_path if 'config_path' in locals() else '未知'}")
     
     def save_api_key(self, text):
         """
         保存API密钥到config.json
         """
         try:
-            with open('config.json', 'r', encoding='utf-8') as f:
+            # 使用get_resource_file_path函数获取config.json的完整路径
+            config_path = get_resource_file_path('config.json')
+            print(f"尝试保存配置文件: {config_path}")
+            
+            with open(config_path, 'r', encoding='utf-8') as f:
                 config = json.load(f)
             
             # 更新API密钥
@@ -410,11 +421,12 @@ class AIWindow(QWidget):
             config['api_config']['api_key'] = text
             
             # 保存到文件
-            with open('config.json', 'w', encoding='utf-8') as f:
+            with open(config_path, 'w', encoding='utf-8') as f:
                 json.dump(config, f, ensure_ascii=False, indent=4)
                 
         except Exception as e:
             print(f"保存API密钥失败: {e}")
+            print(f"错误路径: {config_path if 'config_path' in locals() else '未知'}")
     
     def start_ai(self):
         # 获取API密钥和用户输入

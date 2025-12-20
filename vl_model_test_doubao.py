@@ -13,6 +13,9 @@ import pyautogui
 import pyperclip
 import signal
 from pydantic import BaseModel
+import platform
+import sys
+from mac_app_utils import is_mac_app, get_app_resource_path, get_resource_file_path, get_default_imgs_path
 
 # 全局退出标志
 should_exit = False
@@ -31,6 +34,11 @@ def load_config(config_path="config.json"):
     """
     加载配置文件
     """
+    # 如果是Mac系统下的打包app状态，修改config_path为资源包路径
+    if is_mac_app():
+        config_path = get_resource_file_path(config_path)
+        print(f"检测到Mac App环境，使用资源包中的配置文件: {config_path}")
+    
     try:
         with open(config_path, "r", encoding="utf-8") as f:
             config = json.load(f)
@@ -85,6 +93,18 @@ else:
     SCREENSHOT_CONFIG = DEFAULT_CONFIG["screenshot_config"]
     MOUSE_CONFIG = DEFAULT_CONFIG["mouse_config"]
 
+# 如果是Mac系统下的打包app状态，修改SCREENSHOT_CONFIG中的路径
+if is_mac_app():
+    # 修改输入路径
+    if "input_path" in SCREENSHOT_CONFIG and not os.path.isabs(SCREENSHOT_CONFIG["input_path"]):
+        SCREENSHOT_CONFIG["input_path"] = get_resource_file_path(SCREENSHOT_CONFIG["input_path"])
+        print(f"Mac App环境，修改输入路径为: {SCREENSHOT_CONFIG['input_path']}")
+    
+    # 修改输出路径
+    if "output_path" in SCREENSHOT_CONFIG and not os.path.isabs(SCREENSHOT_CONFIG["output_path"]):
+        SCREENSHOT_CONFIG["output_path"] = get_resource_file_path(SCREENSHOT_CONFIG["output_path"])
+        print(f"Mac App环境，修改输出路径为: {SCREENSHOT_CONFIG['output_path']}")
+
 # 在文件开头导入后添加
 pyautogui.FAILSAFE = MOUSE_CONFIG["failsafe"]  # 禁用安全机制
 
@@ -92,6 +112,11 @@ def read_local_image(image_path):
     """
     读取本地图片并转换为base64编码
     """
+    # 如果是Mac系统下的打包app状态，修改图片路径为资源包路径
+    if is_mac_app() and not os.path.isabs(image_path):
+        image_path = get_resource_file_path(image_path)
+        print(f"Mac App环境，使用资源包中的图片: {image_path}")
+    
     try:
         # 使用cv2读取图片
         img = cv2.imread(image_path)
@@ -158,7 +183,15 @@ def get_next_element(user_content):
     )
 
     # 读取get_next_action_AI_doubao.txt文件
-    with open("get_next_action_AI_doubao.txt", "r", encoding="utf-8") as file:
+    prompt_file_path = "get_next_action_AI_doubao.txt"
+    # 如果是Mac系统下的打包app状态，修改prompt文件路径为资源包路径
+    if is_mac_app():
+        resource_path = get_app_resource_path()
+        if not os.path.isabs(prompt_file_path):
+            prompt_file_path = get_resource_file_path(prompt_file_path)
+            print(f"Mac App环境，使用资源包中的提示文件: {prompt_file_path}")
+    
+    with open(prompt_file_path, "r", encoding="utf-8") as file:
         system_content = file.read().strip()
     #print(f"系统内容：{system_content}")
 
@@ -482,9 +515,9 @@ def auto_control_computer(user_content, max_visual_model_iterations=EXECUTION_CO
                 output_filename = f"screen_label{i+1}.png"
                 output_path = os.path.join(SCREENSHOT_CONFIG["output_path"], output_filename)
                 mark_coordinate_on_image(
+                    SCREENSHOT_CONFIG["input_path"],
                     coordinates,
-                    input_path=SCREENSHOT_CONFIG["input_path"],
-                    output_path=output_path
+                    output_path
                 )
             else:
                 print("错误：未收到模型响应")
