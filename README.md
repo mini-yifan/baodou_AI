@@ -305,7 +305,7 @@ pyinstaller pyqt_main_mac.spec
 - `dist/pyqt_main.exe` (Windows)
 - `dist/pyqt_main.app` (macOS)
 
-### 4. 注意事项
+### 5. 注意事项
 
 - 打包前确保所有依赖已正确安装
 - 可能需要手动复制 `config.json` 和 `get_next_action_AI_doubao.txt` 到 `dist` 目录
