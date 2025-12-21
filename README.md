@@ -6,6 +6,10 @@
 
 包豆电脑是一款基于 AI 视觉模型的智能控制系统，能够通过分析屏幕内容自动执行鼠标和键盘操作，实现任务自动化。该系统结合了 PyQt5 GUI 界面和豆包视觉模型，提供了直观的用户交互方式和强大的自动化能力。
 
+[软件安装包下载（网站中附带使用教程）：点击这里](http://www.miniyifan.com.cn/archives/bao-dou-dian-nao)
+
+[软件演示（视频）：点击这里 【包豆AI电脑，我做了一个可以自动操作电脑的智能软件】](https://www.bilibili.com/video/BV1kwqWBfEhu/?share_source=copy_web&vd_source=daff82a5486ca8fb08383c0e69582854)
+
 ### 核心功能
 
 - 🖥️ **智能屏幕分析**：使用豆包视觉模型实时分析屏幕内容
