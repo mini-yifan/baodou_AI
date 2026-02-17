@@ -132,7 +132,7 @@ pip install pillow
   "api_config": {
     "api_key": "",          # 豆包 API 密钥
     "base_url": "https://ark.cn-beijing.volces.com/api/v3",  # API 基础地址
-    "model_name": "doubao-seed-1-6-vision-250815"  # 视觉模型名称
+    "model_name": "ddoubao-seed-2-0-pro-260215"  # 视觉模型名称
   },
   "ai_config": {
     "thinking_type": "disabled"  # AI 思考模式 "enabled" 或 "disabled"
