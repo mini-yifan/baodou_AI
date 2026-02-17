@@ -154,8 +154,7 @@ DEFAULT_CONFIG = {
     },
     "mouse_config": {
         "move_duration": 0.1,
-        "failsafe": False,
-        "map_coordinates_to_1000": True
+        "failsafe": False
     }
 }
 
@@ -313,102 +312,55 @@ def get_next_element(user_content):
             system_content = file.read().strip()
     #log_print(f"系统内容：{system_content}")
 
-    # 如果base_url为火山引擎，就按照火山引擎的格式
-    if API_CONFIG["base_url"] == "https://ark.cn-beijing.volces.com/api/v3":
-        print("火山引擎")
-        
-        # 检查是否收到中断信号
-        if should_exit:
-            log_print("检测到退出标志，取消API调用")
-            _global_client = None
-            return None
-        
-        try:
-            completion = client.beta.chat.completions.parse(
-                model=API_CONFIG["model_name"],  # 此处以doubao-1-5-ui-tars-250428为例，可按需更换模型名称。模型列表：https://help.aliyun.com/zh/model-studio/models
-                messages=[
-                    {"role": "system",
-                    "content": system_content},
-                    {"role": "user",
-                    "content": [{"type": "image_url",
-                                "image_url": {"url": image_data_url},},
-                                {"type": "text", "text": user_content}]}],
-                #stream=True,
-                # extra_body={'enable_thinking': False,
-                #             "vl_high_resolution_images":True},
-                # response_format={"type": "json_object"}
-                response_format=MathResponse,
-                extra_body={
-                "thinking": {
-                    "type": AI_CONFIG["thinking_type"]  # 从配置文件获取深度思考设置
-                },
-            },
-            )
-        except Exception as e:
-            log_print(f"API调用出错: {e}")
-            # 检查是否是因为用户主动停止
-            if should_exit:
-                log_print("用户主动停止了AI执行")
-            else:
-                log_print(f"API调用失败: {e}")
-            _global_client = None
-            return None
-    # 如果不是火山引擎的url
-    else:
-        print(f"非火山引擎，模型是{API_CONFIG['model_name']}")
-        
-        # 检查是否收到中断信号
-        if should_exit:
-            log_print("检测到退出标志，取消API调用")
-            _global_client = None
-            return None
-        
-        try:
-            # 使用普通的 create 方法获取原始响应
-            completion_raw = client.chat.completions.create(
-                model=API_CONFIG["model_name"],
-                messages=[
-                    {"role": "system",
-                    "content": system_content},
-                    {"role": "user",
-                    "content": [{"type": "image_url",
-                                "image_url": {"url": image_data_url},},
-                                {"type": "text", "text": user_content}]}],
-            )
-            
-            # 获取原始内容
-            raw_content = completion_raw.choices[0].message.content
-            log_print(f"AI 原始返回内容: {raw_content}")
-            
-            # 使用 parse_json 函数解析（会自动处理 markdown 标记）
-            parsed_json = parse_json(raw_content)
-            
-            # 清理全局客户端变量
-            _global_client = None
-            
-            if parsed_json:
-                log_print("手动解析成功！")
-                # 将解析后的 JSON 转换回字符串返回
-                return json.dumps(parsed_json, ensure_ascii=False)
-            else:
-                log_print("手动解析失败，无法处理 AI 返回的内容")
-                return None
-        except Exception as e:
-            log_print(f"API调用出错: {e}")
-            # 检查是否是因为用户主动停止
-            if should_exit:
-                log_print("用户主动停止了AI执行")
-            else:
-                log_print(f"API调用失败: {e}")
-            _global_client = None
-            return None
-
-    log_print(completion.choices[0].message.content)
+    print(f"模型是{API_CONFIG['model_name']}")
     
-    # 清理全局客户端变量
-    _global_client = None
+    # 检查是否收到中断信号
+    if should_exit:
+        log_print("检测到退出标志，取消API调用")
+        _global_client = None
+        return None
     
-    return completion.choices[0].message.content
+    try:
+        # 准备额外的参数，用于控制深度思考等特性
+        extra_body = {
+            "thinking": {
+                "type": AI_CONFIG.get("thinking_type", "disabled")  # 从配置文件获取深度思考设置，默认为disabled
+            }
+        }
+        
+        completion_raw = client.chat.completions.create(
+            model=API_CONFIG["model_name"],
+            messages=[
+                {"role": "system",
+                "content": system_content},
+                {"role": "user",
+                "content": [{"type": "image_url",
+                            "image_url": {"url": image_data_url},},
+                            {"type": "text", "text": user_content}]}],
+            extra_body=extra_body,
+        )
+        
+        raw_content = completion_raw.choices[0].message.content
+        log_print(f"AI 原始返回内容: {raw_content}")
+        
+        parsed_json = parse_json(raw_content)
+        
+        _global_client = None
+        
+        if parsed_json:
+            log_print("手动解析成功！")
+            return json.dumps(parsed_json, ensure_ascii=False)
+        else:
+            log_print("手动解析失败，无法处理 AI 返回的内容")
+            return None
+    except Exception as e:
+        log_print(f"API调用出错: {e}")
+        if should_exit:
+            log_print("用户主动停止了AI执行")
+        else:
+            log_print(f"API调用失败: {e}")
+        _global_client = None
+        return None
 
 
 # 一个解析json的函数
@@ -570,7 +522,7 @@ def move_mouse_to_coordinates(coordinates, solving_problem, action, type_informa
         end_x, end_y = coordinates[1]
         
         # 映射坐标
-        start_x, start_y = map_coordinates(start_x, start_y, scale, img_width, img_height, enable_mapping=MOUSE_CONFIG["map_coordinates_to_1000"])
+        start_x, start_y = map_coordinates(start_x, start_y, scale, img_width, img_height)
         
         # 通知主窗口拖拽起点坐标（仅在坐标有效时）
         if coordinate_callback and 0 <= start_x <= 100000 and 0 <= start_y <= 100000:
@@ -579,7 +531,7 @@ def move_mouse_to_coordinates(coordinates, solving_problem, action, type_informa
             except Exception as e:
                 log_print(f"调用坐标回调函数时出错: {e}")
         
-        end_x, end_y = map_coordinates(end_x, end_y, scale, img_width, img_height, enable_mapping=MOUSE_CONFIG["map_coordinates_to_1000"])
+        end_x, end_y = map_coordinates(end_x, end_y, scale, img_width, img_height)
         
         # 通知主窗口拖拽终点坐标（仅在坐标有效时）
         if coordinate_callback and 0 <= end_x <= 100000 and 0 <= end_y <= 100000:
@@ -605,7 +557,7 @@ def move_mouse_to_coordinates(coordinates, solving_problem, action, type_informa
         x, y = coordinates
         
         # 映射坐标
-        x, y = map_coordinates(x, y, scale, img_width, img_height, enable_mapping=MOUSE_CONFIG["map_coordinates_to_1000"])
+        x, y = map_coordinates(x, y, scale, img_width, img_height)
         
         # 通知主窗口AI输出的坐标（仅在坐标有效时）
         if coordinate_callback and 0 <= x <= 100000 and 0 <= y <= 100000:
