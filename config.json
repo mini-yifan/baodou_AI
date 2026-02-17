@@ -1,6 +1,6 @@
 {
     "api_config": {
-        "api_key": "e658d6fc-7e95-4a0d-bfe0-a9c899335b44",
+        "api_key": "",
         "base_url": "https://ark.cn-beijing.volces.com/api/v3",
         "model_name": "doubao-seed-2-0-pro-260215"
     },
